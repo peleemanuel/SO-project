@@ -16,6 +16,7 @@
 #define PATH_MAX 4096
 #define BUFF_SIZE 8192
 
+// offseturile pentru jumpuri la offseturile respective in header
 const off_t file_size = 2;
 const off_t width_offset = 18;
 const off_t height_offset = 22;
