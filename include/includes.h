@@ -1,3 +1,4 @@
+// acest fisier prezinta toate includurile, constantele, define urile si structurile custom de care am nevoie
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -15,21 +16,15 @@
 #define PATH_MAX 4096
 #define BUFF_SIZE 8192
 
+const off_t file_size = 2;
+const off_t width_offset = 18;
+const off_t height_offset = 22;
+const off_t image_size = 34;
+
 typedef struct
 {
-    uint16_t signature;
     uint32_t fileSize;
-    uint32_t reserved;
-    uint32_t dataOffset;
-    uint32_t size;
     uint32_t width;
     uint32_t height;
-    uint16_t planes;
-    uint16_t bitCount;
-    uint32_t compression;
     uint32_t imageSize;
-    uint32_t xPixelsPerM;
-    uint32_t yPixelsPerM;
-    uint32_t colorsUsed;
-    uint32_t colorsImportant;
 } bmp_header;
