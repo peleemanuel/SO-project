@@ -22,110 +22,6 @@ void write_in_output_file(int output_file, char *result)
 }
 
 /**
- * @brief Functia are rolul de a seta detaliile cerute in enunt in cazul in care s a intalnit un entry de tip directory.
- *
- * @param output_file fisierul in care se scrie rezultatul
- * @param name numele entryului
- * @param stats este struct stat pentru entryul intalnit
- */
-void directory_entry(int output_file, char *name, struct stat stats)
-{
-    char result[BUFF_SIZE];
-    sprintf(result, "nume director: %s\n"
-                    "identificatorul utilizatorului: %d\n"
-                    "drepturi de acces useri: %s\n"
-                    "drepturi de acces grup: %s\n"
-                    "drepturi de acces altii: %s\n\n",
-            name, stats.st_uid, user_rights_checker(stats), group_rights_checker(stats), other_rights_checker(stats));
-
-    write_in_output_file(output_file, result);
-}
-
-/**
- * @brief Functia are rolul de a seta detaliile cerute in enunt in cazul in care s a intalnit un entry de tip file care nu este BMP.
- *
- * @param output_file fisierul in care se scrie rezultatul
- * @param name numele entryului
- * @param stats este struct stat pentru entryul intalnit
- */
-void file_entry(int output_file, char *name, struct stat stats)
-{
-    char result[BUFF_SIZE];
-    char timeToString[11];
-
-    struct tm *lastModTime = localtime(&stats.st_mtime);
-    strftime(timeToString, 11, "%d.%m.%Y", lastModTime);
-
-    sprintf(result, "nume fisier: %s\n"
-                    "identificatorul utilizatorului: %d\n"
-                    "dimensiunea fisierului: %ld\n"
-                    "timpul ultimei modificari: %s\n"
-                    "contorul de legaturi: %ld\n"
-                    "drepturi de acces useri: %s\n"
-                    "drepturi de acces grup: %s\n"
-                    "drepturi de acces altii: %s\n\n",
-            name, stats.st_uid, stats.st_size,
-            timeToString, stats.st_nlink, user_rights_checker(stats), group_rights_checker(stats), other_rights_checker(stats));
-    write_in_output_file(output_file, result);
-}
-
-/**
- * @brief Functia are rolul de a seta detaliile cerute in enunt in cazul in care s a intalnit un entry de tip symbolic link.
- *
- * @param output_file fisierul in care se scrie rezultatul
- * @param name numele entryului
- * @param stats este struct stat pentru entryul intalnit
- */
-void link_entry(char *new_path, int output_file, char *name, struct stat stats)
-{
-    struct stat ln_stats;
-    lstat(new_path, &ln_stats);
-
-    char result[BUFF_SIZE];
-    sprintf(result, "nume legatura: %s\n"
-                    "dimensiune legatura: %ld\n"
-                    "dimensiune fisier: %ld\n"
-                    "drepturi de acces useri: %s\n"
-                    "drepturi de acces grup: %s\n"
-                    "drepturi de acces altii: %s\n\n",
-            name, ln_stats.st_size, stats.st_size, user_rights_checker(stats), group_rights_checker(stats), other_rights_checker(stats));
-
-    write_in_output_file(output_file, result);
-}
-
-/**
- * @brief Functia are rolul de a seta detaliile cerute in enunt in cazul in care s a intalnit un entry de tip file care este BMP.
- *
- * @param output_file fisierul in care se scrie rezultatul
- * @param name numele entryului
- * @param stats este struct stat pentru entryul intalnit
- */
-void bmp_file_entry(char *bmp_file, int output_file, char *name, struct stat stats)
-{
-    bmp_header bmp_file_header = bmp_header_reader(bmp_file);
-    char result[BUFF_SIZE];
-    char timeToString[11];
-
-    struct tm *lastModTime = localtime(&stats.st_mtime);
-    strftime(timeToString, 11, "%d.%m.%Y", lastModTime);
-
-    sprintf(result, "nume fisier: %s\n"
-                    "inaltime: %u\n"
-                    "lungime: %u\n"
-                    "identificatorul utilizatorului: %d\n"
-                    "dimensiunea fisierului: %d\n"
-                    "timpul ultimei modificari: %s\n"
-                    "contorul de legaturi: %ld\n"
-                    "drepturi de acces useri: %s\n"
-                    "drepturi de acces grup: %s\n"
-                    "drepturi de acces altii: %s\n\n",
-            name, bmp_file_header.height, bmp_file_header.width, stats.st_uid, bmp_file_header.fileSize,
-            timeToString, stats.st_nlink, user_rights_checker(stats), group_rights_checker(stats), other_rights_checker(stats));
-
-    write_in_output_file(output_file, result);
-}
-
-/**
  * @brief Aceasta functie are rolul de a face jumpurile necesare in header ca sa obtina datele de care are nevoie pentru a le transmite mai departe
  *
  * @param bmp_file fisierul bmp pe care l am intalnit
@@ -194,4 +90,135 @@ bmp_header bmp_header_reader(char *bmp_file)
     // inchidem si returnam structul cu datele dorite
     close(fd);
     return bmp_file_header;
+}
+
+/**
+ * @brief Functia are rolul de a seta detaliile cerute in enunt in cazul in care sa intalnit un entry de tip directory.
+ *
+ * @param output_file fisierul in care se scrie rezultatul
+ * @param name numele entryului
+ * @param stats este struct stat pentru entryul intalnit
+ */
+void directory_entry(int output_file, char *name, struct stat stats)
+{
+    char result[BUFF_SIZE];
+    char *user_rights = user_rights_checker(stats);
+    char *group_rights = group_rights_checker(stats);
+    char *other_rights = other_rights_checker(stats);
+    sprintf(result, "nume director: %s\n"
+                    "identificatorul utilizatorului: %d\n"
+                    "drepturi de acces useri: %s\n"
+                    "drepturi de acces grup: %s\n"
+                    "drepturi de acces altii: %s\n\n",
+            name, stats.st_uid, user_rights, group_rights, other_rights);
+
+    write_in_output_file(output_file, result);
+    free(user_rights);
+    free(group_rights);
+    free(other_rights);
+}
+
+/**
+ * @brief Functia are rolul de a seta detaliile cerute in enunt in cazul in care sa intalnit un entry de tip file care nu este BMP.
+ *
+ * @param output_file fisierul in care se scrie rezultatul
+ * @param name numele entryului
+ * @param stats este struct stat pentru entryul intalnit
+ */
+void file_entry(int output_file, char *name, struct stat stats)
+{
+    char result[BUFF_SIZE];
+    char timeToString[11];
+
+    struct tm *lastModTime = localtime(&stats.st_mtime);
+    strftime(timeToString, 11, "%d.%m.%Y", lastModTime);
+
+    char *user_rights = user_rights_checker(stats);
+    char *group_rights = group_rights_checker(stats);
+    char *other_rights = other_rights_checker(stats);
+
+    sprintf(result, "nume fisier: %s\n"
+                    "identificatorul utilizatorului: %d\n"
+                    "dimensiunea fisierului: %ld\n"
+                    "timpul ultimei modificari: %s\n"
+                    "contorul de legaturi: %ld\n"
+                    "drepturi de acces useri: %s\n"
+                    "drepturi de acces grup: %s\n"
+                    "drepturi de acces altii: %s\n\n",
+            name, stats.st_uid, stats.st_size,
+            timeToString, stats.st_nlink, user_rights, group_rights, other_rights);
+    write_in_output_file(output_file, result);
+    free(user_rights);
+    free(group_rights);
+    free(other_rights);
+}
+
+/**
+ * @brief Functia are rolul de a seta detaliile cerute in enunt in cazul in care sa intalnit un entry de tip symbolic link.
+ *
+ * @param output_file fisierul in care se scrie rezultatul
+ * @param name numele entryului
+ * @param stats este struct stat pentru entryul intalnit
+ */
+void link_entry(char *new_path, int output_file, char *name, struct stat stats)
+{
+    struct stat ln_stats;
+    lstat(new_path, &ln_stats);
+
+    char *user_rights = user_rights_checker(stats);
+    char *group_rights = group_rights_checker(stats);
+    char *other_rights = other_rights_checker(stats);
+
+    char result[BUFF_SIZE];
+    sprintf(result, "nume legatura: %s\n"
+                    "dimensiune legatura: %ld\n"
+                    "dimensiune fisier: %ld\n"
+                    "drepturi de acces useri: %s\n"
+                    "drepturi de acces grup: %s\n"
+                    "drepturi de acces altii: %s\n\n",
+            name, ln_stats.st_size, stats.st_size, user_rights, group_rights, other_rights);
+
+    write_in_output_file(output_file, result);
+    free(user_rights);
+    free(group_rights);
+    free(other_rights);
+}
+
+/**
+ * @brief Functia are rolul de a seta detaliile cerute in enunt in cazul in care s a intalnit un entry de tip file care este BMP.
+ *
+ * @param output_file fisierul in care se scrie rezultatul
+ * @param name numele entryului
+ * @param stats este struct stat pentru entryul intalnit
+ */
+void bmp_file_entry(char *bmp_file, int output_file, char *name, struct stat stats)
+{
+    bmp_header bmp_file_header = bmp_header_reader(bmp_file);
+    char result[BUFF_SIZE];
+    char timeToString[11];
+
+    char *user_rights = user_rights_checker(stats);
+    char *group_rights = group_rights_checker(stats);
+    char *other_rights = other_rights_checker(stats);
+
+    struct tm *lastModTime = localtime(&stats.st_mtime);
+    strftime(timeToString, 11, "%d.%m.%Y", lastModTime);
+
+    sprintf(result, "nume fisier: %s\n"
+                    "inaltime: %u\n"
+                    "lungime: %u\n"
+                    "identificatorul utilizatorului: %d\n"
+                    "dimensiunea fisierului: %d\n"
+                    "timpul ultimei modificari: %s\n"
+                    "contorul de legaturi: %ld\n"
+                    "drepturi de acces useri: %s\n"
+                    "drepturi de acces grup: %s\n"
+                    "drepturi de acces altii: %s\n\n",
+            name, bmp_file_header.height, bmp_file_header.width, stats.st_uid, bmp_file_header.fileSize,
+            timeToString, stats.st_nlink, user_rights, group_rights, other_rights);
+
+    write_in_output_file(output_file, result);
+    free(user_rights);
+    free(group_rights);
+    free(other_rights);
 }
