@@ -1,7 +1,8 @@
 #include "include/includes.h"
 #include "include/rights_checker.h"
 #include "include/dir_entry_proc.h"
-
+#include "include/procceses.h"
+#include "include/bmp_proc.h"
 /**
  * @brief Functia are ca rol sa determine daca fisierul este un bmp bazat pe extensia lui
  *
@@ -27,8 +28,9 @@ bool is_bmp(const char *file_path)
  * @param output_file este identificatorul fisierului in care scriu datele
  * @param path pathul folderului in care vreau sa fac apelul
  */
-void parse_directory(int output_file, const char *path)
+void parse_directory(const char *path, const char *out_dir)
 {
+    int pid;
     // deschidem fisierul pe care l am primit
     DIR *dir = opendir(path);
     if (dir == NULL)
@@ -57,14 +59,46 @@ void parse_directory(int output_file, const char *path)
         // in cazul in care avem un fisier normal vom verifica daca acesta este bmp si in functie de asta vom decide ce vom alege sa facem in continuare
         if (entry->d_type == DT_REG)
         {
-            printf("File: %s\n", new_path);
             if (!is_bmp(entry->d_name))
             {
-                file_entry(output_file, entry->d_name, dir_entry);
+                printf("File: %s\n", new_path);
+                pid = fork();
+                if (pid == -1)
+                {
+                    perror("Error in fork");
+                    continue;
+                }
+                if (pid == 0)
+                {
+                    file_entry(out_dir, entry->d_name, dir_entry);
+                    exit(8);
+                }
             }
             else
             {
-                bmp_file_entry(new_path, output_file, entry->d_name, dir_entry);
+                printf("BMP: %s\n", new_path);
+                pid = fork();
+                if (pid == -1)
+                {
+                    perror("Error in fork");
+                    continue;
+                }
+                if (pid == 0)
+                {
+                    bmp_file_entry(new_path, out_dir, entry->d_name, dir_entry);
+                    exit(10);
+                }
+                pid = fork();
+                if (pid == -1)
+                {
+                    perror("Error in fork");
+                    continue;
+                }
+                if (pid == 0)
+                {
+                    process_image(new_path);
+                    exit(0);
+                }
             }
         }
 
@@ -72,16 +106,37 @@ void parse_directory(int output_file, const char *path)
         else if (entry->d_type == DT_DIR)
         {
             printf("Directory: %s\n", new_path);
-            directory_entry(output_file, entry->d_name, dir_entry);
-            parse_directory(output_file, new_path);
+            pid = fork();
+            if (pid == -1)
+            {
+                perror("Error in fork");
+                continue;
+            }
+            if (pid == 0)
+            {
+                directory_entry(out_dir, entry->d_name, dir_entry);
+                exit(5);
+            }
+            parse_directory(new_path, out_dir);
         }
 
         // daca avem o legatura simbolica vom apela o functie ce rezolva cerinta ceruta
         else if (entry->d_type == DT_LNK)
         {
             printf("Link: %s\n", new_path);
-            link_entry(new_path, output_file, entry->d_name, dir_entry);
+            pid = fork();
+            if (pid == -1)
+            {
+                perror("Error in fork");
+                continue;
+            }
+            if (pid == 0)
+            {
+                link_entry(new_path, out_dir, entry->d_name, dir_entry);
+                exit(6);
+            }
         }
+        sleep(1);
     }
 
     closedir(dir);
@@ -96,9 +151,9 @@ void parse_directory(int output_file, const char *path)
 int main(int argc, char *argv[])
 {
     // verific practic daca am numarul corespunzator de argumente
-    if (argc != 2)
+    if (argc != 3)
     {
-        printf("Usage: %s <path_to_directory>\n", argv[0]);
+        printf("Usage: %s <path_to_directory> <path_to_new_directory>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
@@ -107,28 +162,19 @@ int main(int argc, char *argv[])
     stat(argv[1], &info);
     if (!S_ISDIR(info.st_mode))
     {
-        printf("Argument %s must be a directory\n", argv[0]);
+        printf("First argument %s must be a directory\n", argv[1]);
         exit(EXIT_FAILURE);
     }
 
-    int fdOUT;
-    // creem fisierul in care vom scrie datele despre fiecare fisier:
-    fdOUT = open("statistica.txt", O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
-    if (fdOUT == -1)
+    stat(argv[2], &info);
+    if (!S_ISDIR(info.st_mode))
     {
-        perror("Nu putem crea fisierul");
-        exit(1);
+        printf("Second argument %s must be a directory\n", argv[2]);
+        exit(EXIT_FAILURE);
     }
 
     // apelam functia de parsare a fisierelor din directorul primit ca parametru
-    parse_directory(fdOUT, argv[1]);
-
-    // inchidem fisierul in care scriem
-    if (close(fdOUT) < 0)
-    {
-        perror("Eroare la inchiderea fisierului de output");
-        exit(-1);
-    }
-
+    parse_directory(argv[1], argv[2]);
+    wait_for_all_child_processes();
     return 0;
 }

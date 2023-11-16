@@ -1,11 +1,22 @@
 /**
  * @brief in principiu aceasta functie iti va citi cate caractere trebuie sa scrie in fisier dupa care va apela functia de write si va scrie. Rolul ei este de a nu avea artefacte in fisierul de iesire ulterior
  *
- * @param output_file fisierul in care se va scrie
+ * @param out_dir folderul de output
+ * @param filename numele fisierului de statistica in care se va scrie
  * @param result sirul de caractere care trebuie scris
  */
-void write_in_output_file(int output_file, char *result)
+void write_in_output_file(const char *out_dir, const char *filename, char *result)
 {
+    char filepath[PATH_MAX];
+    snprintf(filepath, sizeof(filepath), "%s/%s", out_dir, filename);
+
+    int fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+    if (fd == -1)
+    {
+        perror("Eroare la deschiderea fisierului");
+        exit(1);
+    }
+
     char s;
     int scrietot = 0;
     // citesc caracter cu caracter si incrementez contorul
@@ -14,11 +25,13 @@ void write_in_output_file(int output_file, char *result)
         scrietot++;
     }
     // scriu in fisier exact cat trebuie ca sa nu am artefacte in fisier
-    if ((write(output_file, result, scrietot)) < 0)
+    if ((write(fd, result, scrietot)) < 0)
     {
         perror("Nu putem scrie in fisier");
         exit(1);
     }
+
+    close(fd);
 }
 
 /**
@@ -87,6 +100,30 @@ bmp_header bmp_header_reader(char *bmp_file)
         exit(EXIT_FAILURE);
     }
 
+    // Citim informatiile despre offset sa stim cat sarim
+    if (lseek(fd, header_offset, SEEK_SET) == -1)
+    {
+        perror("Eroare la cautrarea in fișier");
+        exit(EXIT_FAILURE);
+    }
+    if (read(fd, &bmp_file_header.headerOffset, sizeof(bmp_file_header.headerOffset)) == -1)
+    {
+        perror("Eroare la citirea din fișier");
+        exit(EXIT_FAILURE);
+    }
+
+    // Citim informatiile despre bitcount sa stim cat sarim
+    if (lseek(fd, bitcount_offset, SEEK_SET) == -1)
+    {
+        perror("Eroare la cautrarea in fișier");
+        exit(EXIT_FAILURE);
+    }
+    if (read(fd, &bmp_file_header.bitCount, sizeof(bmp_file_header.bitCount)) == -1)
+    {
+        perror("Eroare la citirea din fișier");
+        exit(EXIT_FAILURE);
+    }
+
     // inchidem si returnam structul cu datele dorite
     close(fd);
     return bmp_file_header;
@@ -99,8 +136,9 @@ bmp_header bmp_header_reader(char *bmp_file)
  * @param name numele entryului
  * @param stats este struct stat pentru entryul intalnit
  */
-void directory_entry(int output_file, char *name, struct stat stats)
+void directory_entry(const char *out_dir, char *name, struct stat stats)
 {
+    char output_filename[PATH_MAX];
     char result[BUFF_SIZE];
     char *user_rights = user_rights_checker(stats);
     char *group_rights = group_rights_checker(stats);
@@ -112,7 +150,9 @@ void directory_entry(int output_file, char *name, struct stat stats)
                     "drepturi de acces altii: %s\n\n",
             name, stats.st_uid, user_rights, group_rights, other_rights);
 
-    write_in_output_file(output_file, result);
+    snprintf(output_filename, sizeof(output_filename), "%s_statistica.txt", name);
+
+    write_in_output_file(out_dir, output_filename, result);
     free(user_rights);
     free(group_rights);
     free(other_rights);
@@ -125,8 +165,9 @@ void directory_entry(int output_file, char *name, struct stat stats)
  * @param name numele entryului
  * @param stats este struct stat pentru entryul intalnit
  */
-void file_entry(int output_file, char *name, struct stat stats)
+void file_entry(const char *out_dir, char *name, struct stat stats)
 {
+    char output_filename[PATH_MAX];
     char result[BUFF_SIZE];
     char timeToString[11];
 
@@ -147,7 +188,10 @@ void file_entry(int output_file, char *name, struct stat stats)
                     "drepturi de acces altii: %s\n\n",
             name, stats.st_uid, stats.st_size,
             timeToString, stats.st_nlink, user_rights, group_rights, other_rights);
-    write_in_output_file(output_file, result);
+
+    snprintf(output_filename, sizeof(output_filename), "%s_statistica.txt", name);
+
+    write_in_output_file(out_dir, output_filename, result);
     free(user_rights);
     free(group_rights);
     free(other_rights);
@@ -160,8 +204,9 @@ void file_entry(int output_file, char *name, struct stat stats)
  * @param name numele entryului
  * @param stats este struct stat pentru entryul intalnit
  */
-void link_entry(char *new_path, int output_file, char *name, struct stat stats)
+void link_entry(char *new_path, const char *out_dir, char *name, struct stat stats)
 {
+    char output_filename[PATH_MAX];
     struct stat ln_stats;
     lstat(new_path, &ln_stats);
 
@@ -178,7 +223,9 @@ void link_entry(char *new_path, int output_file, char *name, struct stat stats)
                     "drepturi de acces altii: %s\n\n",
             name, ln_stats.st_size, stats.st_size, user_rights, group_rights, other_rights);
 
-    write_in_output_file(output_file, result);
+    snprintf(output_filename, sizeof(output_filename), "%s_statistica.txt", name);
+
+    write_in_output_file(out_dir, output_filename, result);
     free(user_rights);
     free(group_rights);
     free(other_rights);
@@ -191,9 +238,10 @@ void link_entry(char *new_path, int output_file, char *name, struct stat stats)
  * @param name numele entryului
  * @param stats este struct stat pentru entryul intalnit
  */
-void bmp_file_entry(char *bmp_file, int output_file, char *name, struct stat stats)
+void bmp_file_entry(char *bmp_file, const char *out_dir, char *name, struct stat stats)
 {
     bmp_header bmp_file_header = bmp_header_reader(bmp_file);
+    char output_filename[PATH_MAX];
     char result[BUFF_SIZE];
     char timeToString[11];
 
@@ -217,7 +265,9 @@ void bmp_file_entry(char *bmp_file, int output_file, char *name, struct stat sta
             name, bmp_file_header.height, bmp_file_header.width, stats.st_uid, bmp_file_header.fileSize,
             timeToString, stats.st_nlink, user_rights, group_rights, other_rights);
 
-    write_in_output_file(output_file, result);
+    snprintf(output_filename, sizeof(output_filename), "%s_statistica.txt", name);
+
+    write_in_output_file(out_dir, output_filename, result);
     free(user_rights);
     free(group_rights);
     free(other_rights);
