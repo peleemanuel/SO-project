@@ -69,3 +69,49 @@ char *other_rights_checker(struct stat stats)
     other_rights[3] = '\0';
     return other_rights;
 }
+
+/**
+ * @brief Functie care verifica daca am toate drepturile de citire pentru un anumit fisier/folder. Va fi folosit in principiu pentru verificarile initiale.
+ *
+ * @param stats structul stat al fisierului folderului ce trebuie testat.
+ * @return true in caz ca avem toate drepturile de citire
+ * @return false in caz contar
+ */
+bool read_rights_checker(struct stat stats)
+{
+    bool result = false;
+    char *user_rights = user_rights_checker(stats);
+    char *group_rights = group_rights_checker(stats);
+    char *other_rights = other_rights_checker(stats);
+
+    if (user_rights[0] == 'R' && group_rights[0] == 'R' && other_rights[0] == 'R')
+        result = true;
+    free(user_rights);
+    free(group_rights);
+    free(other_rights);
+
+    return result;
+}
+
+/**
+ * @brief Functie care verifica daca am toate drepturile de scriere pentru un anumit fisier/folder. Va fi folosit in principiu pentru verificarile initiale.
+ *
+ * @param stats structul stat al fisierului folderului ce trebuie testat.
+ * @return true in caz ca avem toate drepturile de scriere
+ * @return false in caz contar
+ */
+bool write_rights_checker(struct stat stats)
+{
+    bool result = false;
+    char *user_rights = user_rights_checker(stats);
+    char *group_rights = group_rights_checker(stats);
+    char *other_rights = other_rights_checker(stats);
+
+    if (user_rights[1] == 'W' && group_rights[1] == 'W' && other_rights[1] == 'W')
+        result = true;
+    free(user_rights);
+    free(group_rights);
+    free(other_rights);
+
+    return result;
+}

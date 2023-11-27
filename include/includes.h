@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <sys/wait.h>
+#include <ctype.h>
 
 #define PATH_MAX 4096
 #define BUFF_SIZE 8192

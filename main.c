@@ -23,12 +23,14 @@ bool is_bmp(const char *file_path)
 }
 
 /**
- * @brief Functia parse_directory in principiu se asigura ca face apelarea pe toate intrarile de fisier si director in mod recursiv din directorul primit ca paramentru
+ * @brief Functia parse_directory in principiu se asigura ca face apelarea pe toate intrarile de fisier si director in mod recursiv din directorul primit ca parametru realizand toate operatiile cerute mai jos
  *
- * @param output_file este identificatorul fisierului in care scriu datele
- * @param path pathul folderului in care vreau sa fac apelul
+ * @param path este calea folderului din care citesc informatiile
+ * @param out_dir este calea catre folderul in care se vor scrie fisierele de statistica
+ * @param c reprezinta sirul de litere cu caracterul alfanumeric ce trebuie cautat in propozitii.
  */
-void parse_directory(const char *path, const char *out_dir)
+
+void parse_directory(const char *path, const char *out_dir, const char *c)
 {
     int pid;
     // deschidem fisierul pe care l am primit
@@ -62,17 +64,90 @@ void parse_directory(const char *path, const char *out_dir)
             if (!is_bmp(entry->d_name))
             {
                 printf("File: %s\n", new_path);
-                pid = fork();
-                if (pid == -1)
+
+                int FF[2], TF[2];
+                pid_t pid1, pid2;
+                // Crearea unui pipe
+                if (pipe(TF) == -1)
+                {
+                    perror("pipe");
+                    exit(EXIT_FAILURE);
+                }
+                // Crearea unui pipe
+                if (pipe(FF) == -1)
+                {
+                    perror("pipe");
+                    exit(EXIT_FAILURE);
+                }
+
+                pid1 = fork();
+                if (pid1 == -1)
                 {
                     perror("Error in fork");
                     continue;
                 }
-                if (pid == 0)
+                if (pid1 == 0)
                 {
+                    close(TF[0]);
+                    close(TF[1]);
+                    close(FF[0]);
                     file_entry(out_dir, entry->d_name, dir_entry);
-                    exit(8);
+
+                    if ((dup2(FF[1], 1)) < 0)
+                    {
+                        perror("Eroare la dup2\n");
+                        exit(EXIT_FAILURE);
+                    };
+
+                    close(FF[1]);
+
+                    execlp("cat", "cat", new_path, (char *)NULL);
+                    perror("execlp");
+                    exit(EXIT_FAILURE);
                 }
+
+                pid2 = fork();
+                if (pid2 == -1)
+                {
+                    perror("Error in fork");
+                    continue;
+                }
+                if (pid2 == 0)
+                {
+                    close(FF[1]);
+                    close(TF[0]);
+
+                    if ((dup2(FF[0], 0)) < 0)
+                    {
+                        perror("Eroare la dup2\n");
+                        exit(EXIT_FAILURE);
+                    };
+                    close(FF[0]);
+
+                    if ((dup2(TF[1], 1)) < 0)
+                    {
+                        perror("Eroare la dup2\n");
+                        exit(EXIT_FAILURE);
+                    };
+                    close(TF[1]);
+
+                    execlp("bash", "bash", "script.sh", c, (char *)NULL);
+                    perror("execlp 2");
+                    exit(EXIT_FAILURE);
+                }
+
+                close(FF[0]);
+                close(FF[1]);
+                close(TF[1]);
+
+                waitpid(pid1, NULL, 0);
+                waitpid(pid2, NULL, 0);
+
+                char buffer[BUFF_SIZE];
+                read(TF[0], buffer, BUFF_SIZE);
+                close(TF[0]);
+
+                printf("Numărul de propoziții corespunzătoare: %s\n", buffer);
             }
             else
             {
@@ -117,7 +192,7 @@ void parse_directory(const char *path, const char *out_dir)
                 directory_entry(out_dir, entry->d_name, dir_entry);
                 exit(5);
             }
-            parse_directory(new_path, out_dir);
+            parse_directory(new_path, out_dir, c);
         }
 
         // daca avem o legatura simbolica vom apela o functie ce rezolva cerinta ceruta
@@ -151,9 +226,9 @@ void parse_directory(const char *path, const char *out_dir)
 int main(int argc, char *argv[])
 {
     // verific practic daca am numarul corespunzator de argumente
-    if (argc != 3)
+    if (argc != 4)
     {
-        printf("Usage: %s <path_to_directory> <path_to_new_directory>\n", argv[0]);
+        printf("Usage: %s <path_to_directory> <path_to_new_directory> <c>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
@@ -166,6 +241,15 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    // verific ca am drepturi de citire asupra folderului din care voi citii informatiile
+    if (read_rights_checker(info))
+        printf("We have all the read rights on this folder.\n");
+    else
+    {
+        printf("We dont have all the read rights on this folder.\n");
+        exit(EXIT_FAILURE);
+    }
+
     stat(argv[2], &info);
     if (!S_ISDIR(info.st_mode))
     {
@@ -173,8 +257,24 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    // verific ca am drepturi de scriere asupra folderului in care voi scrie informatiile
+    if (write_rights_checker(info))
+        printf("We have all the read rights on this folder.\n");
+    else
+    {
+        printf("We dont have all the read rights on this folder.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // verificam ca am primit un caracter aflanumeric la intratre
+    if (strlen(argv[3]) != 1 || !isalnum(argv[3][0]))
+    {
+        printf("Argument 3 is not an alnum character\n");
+        exit(EXIT_FAILURE);
+    }
+
     // apelam functia de parsare a fisierelor din directorul primit ca parametru
-    parse_directory(argv[1], argv[2]);
+    parse_directory(argv[1], argv[2], argv[3]);
     wait_for_all_child_processes();
     return 0;
 }
