@@ -26,6 +26,8 @@ const off_t bitcount_offset = 28;
 const off_t height_offset = 22;
 const off_t image_size = 34;
 const off_t offsetToPalette = 54;
+
+// structura cu datele strict necesare din headerul unui BMP
 typedef struct
 {
     uint32_t fileSize;

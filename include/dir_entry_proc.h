@@ -46,7 +46,7 @@ bmp_header bmp_header_reader(char *bmp_file)
     int fd = open(bmp_file, O_RDONLY);
     if (fd == -1)
     {
-        perror("Nu s-a putut deschide fișierul");
+        perror("Nu s-a putut deschide fisierul");
         exit(EXIT_FAILURE);
     }
 
@@ -55,72 +55,72 @@ bmp_header bmp_header_reader(char *bmp_file)
     // Citim informatiile despre file size si le scriem in struct
     if (lseek(fd, file_size, SEEK_SET) == -1)
     {
-        perror("Eroare la cautrarea in fișier");
+        perror("Eroare la cautrarea in fisier");
         exit(EXIT_FAILURE);
     }
     if (read(fd, &bmp_file_header.fileSize, sizeof(bmp_file_header.fileSize)) == -1)
     {
-        perror("Eroare la citirea din fișier");
+        perror("Eroare la citirea din fisier");
         exit(EXIT_FAILURE);
     }
 
     // Citim informatiile despre width si le scriem in struct
     if (lseek(fd, width_offset, SEEK_SET) == -1)
     {
-        perror("Eroare la cautrarea in fișier");
+        perror("Eroare la cautrarea in fisier");
         exit(EXIT_FAILURE);
     }
     if (read(fd, &bmp_file_header.width, sizeof(bmp_file_header.width)) == -1)
     {
-        perror("Eroare la citirea din fișier");
+        perror("Eroare la citirea din fisier");
         exit(EXIT_FAILURE);
     }
 
     // Citim informatiile despre height si le scriem in struct
     if (lseek(fd, height_offset, SEEK_SET) == -1)
     {
-        perror("Eroare la cautrarea in fișier");
+        perror("Eroare la cautrarea in fisier");
         exit(EXIT_FAILURE);
     }
     if (read(fd, &bmp_file_header.height, sizeof(bmp_file_header.height)) == -1)
     {
-        perror("Eroare la citirea din fișier");
+        perror("Eroare la citirea din fisier");
         exit(EXIT_FAILURE);
     }
 
     // Citim informatiile despre sizeul imaginii si le scriem in struct
     if (lseek(fd, image_size, SEEK_SET) == -1)
     {
-        perror("Eroare la cautrarea in fișier");
+        perror("Eroare la cautrarea in fisier");
         exit(EXIT_FAILURE);
     }
     if (read(fd, &bmp_file_header.imageSize, sizeof(bmp_file_header.imageSize)) == -1)
     {
-        perror("Eroare la citirea din fișier");
+        perror("Eroare la citirea din fisier");
         exit(EXIT_FAILURE);
     }
 
     // Citim informatiile despre offset sa stim cat sarim
     if (lseek(fd, header_offset, SEEK_SET) == -1)
     {
-        perror("Eroare la cautrarea in fișier");
+        perror("Eroare la cautrarea in fisier");
         exit(EXIT_FAILURE);
     }
     if (read(fd, &bmp_file_header.headerOffset, sizeof(bmp_file_header.headerOffset)) == -1)
     {
-        perror("Eroare la citirea din fișier");
+        perror("Eroare la citirea din fisier");
         exit(EXIT_FAILURE);
     }
 
     // Citim informatiile despre bitcount sa stim cat sarim
     if (lseek(fd, bitcount_offset, SEEK_SET) == -1)
     {
-        perror("Eroare la cautrarea in fișier");
+        perror("Eroare la cautrarea in fisier");
         exit(EXIT_FAILURE);
     }
     if (read(fd, &bmp_file_header.bitCount, sizeof(bmp_file_header.bitCount)) == -1)
     {
-        perror("Eroare la citirea din fișier");
+        perror("Eroare la citirea din fisier");
         exit(EXIT_FAILURE);
     }
 

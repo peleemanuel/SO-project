@@ -65,89 +65,8 @@ void parse_directory(const char *path, const char *out_dir, const char *c)
             {
                 printf("File: %s\n", new_path);
 
-                int FF[2], TF[2];
-                pid_t pid1, pid2;
-                // Crearea unui pipe
-                if (pipe(TF) == -1)
-                {
-                    perror("pipe");
-                    exit(EXIT_FAILURE);
-                }
-                // Crearea unui pipe
-                if (pipe(FF) == -1)
-                {
-                    perror("pipe");
-                    exit(EXIT_FAILURE);
-                }
-
-                pid1 = fork();
-                if (pid1 == -1)
-                {
-                    perror("Error in fork");
-                    continue;
-                }
-                if (pid1 == 0)
-                {
-                    close(TF[0]);
-                    close(TF[1]);
-                    close(FF[0]);
-                    file_entry(out_dir, entry->d_name, dir_entry);
-
-                    if ((dup2(FF[1], 1)) < 0)
-                    {
-                        perror("Eroare la dup2\n");
-                        exit(EXIT_FAILURE);
-                    };
-
-                    close(FF[1]);
-
-                    execlp("cat", "cat", new_path, (char *)NULL);
-                    perror("execlp");
-                    exit(EXIT_FAILURE);
-                }
-
-                pid2 = fork();
-                if (pid2 == -1)
-                {
-                    perror("Error in fork");
-                    continue;
-                }
-                if (pid2 == 0)
-                {
-                    close(FF[1]);
-                    close(TF[0]);
-
-                    if ((dup2(FF[0], 0)) < 0)
-                    {
-                        perror("Eroare la dup2\n");
-                        exit(EXIT_FAILURE);
-                    };
-                    close(FF[0]);
-
-                    if ((dup2(TF[1], 1)) < 0)
-                    {
-                        perror("Eroare la dup2\n");
-                        exit(EXIT_FAILURE);
-                    };
-                    close(TF[1]);
-
-                    execlp("bash", "bash", "script.sh", c, (char *)NULL);
-                    perror("execlp 2");
-                    exit(EXIT_FAILURE);
-                }
-
-                close(FF[0]);
-                close(FF[1]);
-                close(TF[1]);
-
-                waitpid(pid1, NULL, 0);
-                waitpid(pid2, NULL, 0);
-
-                char buffer[BUFF_SIZE];
-                read(TF[0], buffer, BUFF_SIZE);
-                close(TF[0]);
-
-                printf("Numărul de propoziții corespunzătoare: %s\n", buffer);
+                // rulam tot ceea ce se cere pentru un fisier normal aici
+                piping_regular_file_processes(out_dir, entry, dir_entry, new_path, c);
             }
             else
             {
@@ -156,7 +75,7 @@ void parse_directory(const char *path, const char *out_dir, const char *c)
                 if (pid == -1)
                 {
                     perror("Error in fork");
-                    continue;
+                    exit(EXIT_FAILURE);
                 }
                 if (pid == 0)
                 {
@@ -167,7 +86,7 @@ void parse_directory(const char *path, const char *out_dir, const char *c)
                 if (pid == -1)
                 {
                     perror("Error in fork");
-                    continue;
+                    exit(EXIT_FAILURE);
                 }
                 if (pid == 0)
                 {
@@ -185,7 +104,7 @@ void parse_directory(const char *path, const char *out_dir, const char *c)
             if (pid == -1)
             {
                 perror("Error in fork");
-                continue;
+                exit(EXIT_FAILURE);
             }
             if (pid == 0)
             {
@@ -203,7 +122,7 @@ void parse_directory(const char *path, const char *out_dir, const char *c)
             if (pid == -1)
             {
                 perror("Error in fork");
-                continue;
+                exit(EXIT_FAILURE);
             }
             if (pid == 0)
             {
@@ -259,10 +178,10 @@ int main(int argc, char *argv[])
 
     // verific ca am drepturi de scriere asupra folderului in care voi scrie informatiile
     if (write_rights_checker(info))
-        printf("We have all the read rights on this folder.\n");
+        printf("We have all the write rights on this folder.\n");
     else
     {
-        printf("We dont have all the read rights on this folder.\n");
+        printf("We dont have all the write rights on this folder.\n");
         exit(EXIT_FAILURE);
     }
 
