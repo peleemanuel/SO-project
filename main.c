@@ -29,7 +29,6 @@ bool is_bmp(const char *file_path)
  * @param out_dir este calea catre folderul in care se vor scrie fisierele de statistica
  * @param c reprezinta sirul de litere cu caracterul alfanumeric ce trebuie cautat in propozitii.
  */
-
 void parse_directory(const char *path, const char *out_dir, const char *c)
 {
     int pid;

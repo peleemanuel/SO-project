@@ -57,8 +57,12 @@ void piping_regular_file_processes(const char *out_dir, struct dirent *entry, st
         };
         close(FF[1]);
 
+        // Ca sa putem face o comanda ce sa dea exit cu numarul de linii scrise in fisierul de exit, o sa ii facem o comanda care sa dea exit cu acest numar pentru ca nu mai vom putea controla odata ce se intra in execlp
+        char command[PATH_MAX];
+        sprintf(command, "cat %s ; exit %d", new_path, 8);
+
         // folosim comanda cat pentru a afisa continutul care defapt este transmis catre urmatorul pipe ca intrare.
-        execlp("cat", "cat", new_path, (char *)NULL);
+        execlp("bash", "bash", "-c", command, (char *)NULL);
         perror("execlp");
         exit(EXIT_FAILURE);
     }
@@ -104,8 +108,7 @@ void piping_regular_file_processes(const char *out_dir, struct dirent *entry, st
     close(FF[1]);
     close(TF[1]);
 
-    // astept ca procesele fiu sa se termine ca sa ma asigur ca si au incheiat activitatea de transmitere iar pe canalul tata fiu voi avea sigur rezultatul asteptat.
-    waitpid(pid1, NULL, 0);
+    // astept ca procesul fiu care citeste sa se termine ca sa ma asigur ca si au incheiat activitatea de transmitere iar pe canalul tata fiu voi avea sigur rezultatul asteptat.
     waitpid(pid2, NULL, 0);
 
     // citim rezultatul
