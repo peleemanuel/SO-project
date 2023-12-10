@@ -1,3 +1,2 @@
 # SO-project
-Acest content e mult mai mare ca dimensiuni pentru a testa legatura simbolica.
-Inportant place pepsi!
+Acest repo contine rezolvarea proiectului primit la materia de SO anul 2023-2024.
