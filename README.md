@@ -7,8 +7,10 @@ This repo contains a project in C that mainly does various things around with pi
 ### Compile
 
 ```bash
-gcc -g -o <desired_name> main.c
+gcc -g -o <binary_name> main.c
 ```
 ### Usage
 
-Usage: %s <source_directory> <destination_directory> <searched_character>
+```bash
+./<binary_name> %s <source_directory> <destination_directory> <searched_character>
+```
